@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vice Street</string>
+    <string name="title_activity_main">Vice Street</string>
+    <string name="package_name">com.italorhamon.vicestreet</string>
+    <string name="custom_url_scheme">com.italorhamon.vicestreet</string>
+</resources>

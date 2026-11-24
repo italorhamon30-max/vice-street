@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Vice Street - Ação &amp; Mundo Aberto</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: #111;
+      color: #fff;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #222;
+    }
+
+    #hud {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .stats, .top-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .stat-box {
+      background: rgba(0, 0, 0, 0.85);
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .money { color: #4ade80; }
+    .health { color: #f87171; }
+    .wanted { color: #facc15; }
+    .level-box { color: #38bdf8; }
+
+    .btn-ad, .btn-shop {
+      border: none;
+      padding: 7px 11px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-ad {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+    }
+
+    .btn-shop {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #fff;
+    }
+
+    #level-banner {
+      position: fixed;
+      top: 68px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid #38bdf8;
+      color: #e0f2fe;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: bold;
+      font-size: 13px;
+      z-index: 15;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #joystick-zone {
+      width: 120px;
+      height: 120px;
+      pointer-events: auto;
+    }
+
+    #joystick-base {
+      width: 105px;
+      height: 105px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #joystick-stick {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.82);
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    #action-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 50px;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+    }
+
+    .action-btn.fire {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ef4444, #b91c1c);
+      font-size: 14px;
+    }
+
+    .action-btn.secondary {
+      padding: 9px 13px;
+      background: rgba(30, 41, 59, 0.94);
+      border: 1px solid #475569;
+      font-size: 12px;
+    }
+
+    .action-btn.vehicle {
+      padding: 9px 13px;
+      background: rgba(16, 185, 129, 0.92);
+      border: 1px solid #34d399;
+      font-size: 12px;
+    }
+
+    .action-btn.vehicle.active-vehicle {
+      background: rgba(234, 179, 8, 0.94);
+      color: #111;
+      border-color: #fde047;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      padding: 16px;
+    }
+
+    .hidden { display: none !important; }
+
+    .modal-content {
+      background: #1e293b;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid #334155;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .close-btn {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: bold;
+    }
+
+    .shop-tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: #0f172a;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .tab-btn.active {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .shop-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .shop-card h4 { font-size: 14px; }
+    .shop-card p { font-size: 12px; color: #94a3b8; }
+
+    .buy-btn {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 12px;
+      background: #22c55e;
+      color: #052e16;
+    }
+
+    .buy-btn.equipped {
+      background: #64748b;
+      color: #fff;
+    }
+
+    .buy-btn.ad-unlock {
+      background: #f59e0b;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .ad-box {
+      background: #0f172a;
+      padding: 24px;
+      border-radius: 16px;
+      text-align: center;
+      width: 90%;
+      max-width: 340px;
+      border: 1px solid #f59e0b;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #334155;
+      border-radius: 10px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+
+    #ad-progress {
+      width: 0%;
+      height: 100%;
+      background: #f59e0b;
+      transition: width 0.2s;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="stats">
+      <div class="stat-box health">❤️ <span id="hp-text">450</span></div>
+      <div class="stat-box money">💰 $<span id="money-text">1500</span></div>
+      <div class="stat-box wanted">⭐ <span id="wanted-text">0</span></div>
+      <div class="stat-box level-box">🏁 Nv.<span id="level-text">1</span> | 👾 <span id="left-text">8</span></div>
+    </div>
+
+    <div class="top-buttons">
+      <button id="btn-ad-coins" class="btn-ad">🎬 +600 Moedas</button>
+      <button id="btn-open-shop" class="btn-shop">🛒 Loja</button>
+    </div>
+  </div>
+
+  <div id="level-banner" class="hidden"></div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="controls">
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-stick"></div>
+      </div>
+    </div>
+
+    <div id="action-buttons">
+      <div class="action-row">
+        <button id="btn-vehicle" class="action-btn vehicle">🚗 Entrar</button>
+        <button id="btn-switch-weapon" class="action-btn secondary">🔄 Arma</button>
+      </div>
+      <button id="btn-shoot" class="action-btn fire">🔫 ATIRAR</button>
+    </div>
+  </div>
+
+  <div id="shop-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🛒 Loja da Cidade</h2>
+        <button id="btn-close-shop" class="close-btn">✖</button>
+      </div>
+
+      <div class="shop-tabs">
+        <button class="tab-btn active" data-tab="characters">Personagens</button>
+        <button class="tab-btn" data-tab="outfits">Roupas</button>
+        <button class="tab-btn" data-tab="weapons">Armas</button>
+      </div>
+
+      <div id="shop-items" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <div id="ad-overlay" class="modal hidden">
+    <div class="ad-box">
+      <h3>📺 Anúncio Patrocinado</h3>
+      <p id="ad-status">Carregando anúncio...</p>
+      <div class="progress-bar"><div id="ad-progress"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth || 360;
+      canvas.height = window.innerHeight || 640;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Troque pelos seus IDs reais do Google AdMob (blocos com "/")
+    const ADMOB_CONFIG = {
+      IS_TESTING: true,
+      REWARDED_AD_ID: 'ca-app-pub-4982389907201580/2343276978/SEU_BLOCO_PREMIADO',
+      INTERSTITIAL_AD_ID: 'ca-app-pub-4982389907201580/2505968044/SEU_BLOCO_INTERSTICIAL'
+    };
+
+    let isAdPlaying = false;
+    let admobReady = false;
+
+    function getCapAdMob() {
+      return window.Capacitor &&
+        window.Capacitor.Plugins &&
+        window.Capacitor.Plugins.AdMob
+        ? window.Capacitor.Plugins.AdMob
+        : null;
+    }
+
+    async function initCapAdMob() {
+      const AdMob = getCapAdMob();
+      if (!AdMob || admobReady) return;
+      try {
+        await AdMob.initialize({
+          initializeForTesting: ADMOB_CONFIG.IS_TESTING
+        });
+        admobReady = true;
+      } catch (_) {}
+    }
+
+    const AdsManager = {
+      async showRewarded(onRewardEarned) {
+        isAdPlaying = true;
+        let rewardedGiven = false;
+        const grantOnce = () => {
+          if (!rewardedGiven) {
+            rewardedGiven = true;
+            onRewardEarned();
+          }
+        };
+        const finish = () => {
+          isAdPlaying = false;
+          grantOnce();
+        };
+
+        const AdMob = getCapAdMob();
+        if (AdMob) {
+          try {
+            await initCapAdMob();
+            if (AdMob.addListener) {
+              const l1 = await AdMob.addListener('onRewardedVideoReward', () => {
+                grantOnce();
+              });
+              const l2 = await AdMob.addListener('onRewardedVideoDismiss', () => {
+                l1?.remove?.();
+                l2?.remove?.();
+                isAdPlaying = false;
+                grantOnce();
+              });
+            }
+            await AdMob.prepareRewardVideoAd({
+              adId: ADMOB_CONFIG.REWARDED_AD_ID,
+              isTesting: ADMOB_CONFIG.IS_TESTING
+            });
+            await AdMob.showRewardVideoAd();
+            return;
+          } catch (_) {
+            this.simulateAd(finish);
+            return;
+          }
+        }
+        this.simulateAd(finish);
+      },
+
+      async showInterstitial(onClosed) {
+        isAdPlaying = true;
+        const finish = () => {
+          isAdPlaying = false;
+          if (typeof onClosed === 'function') onClosed();
+        };
+
+        const AdMob = getCapAdMob();
+        if (AdMob) {
+          try {
+            await initCapAdMob();
+            if (AdMob.addListener) {
+              const l = await AdMob.addListener('onInterstitialAdDismiss', () => {
+                l?.remove?.();
+                finish();
+              });
+            }
+            await AdMob.prepareInterstitial({
+              adId: ADMOB_CONFIG.INTERSTITIAL_AD_ID,
+              isTesting: ADMOB_CONFIG.IS_TESTING
+            });
+            await AdMob.showInterstitial();
+            return;
+          } catch (_) {
+            this.simulateAd(finish);
+            return;
+          }
+        }
+        this.simulateAd(finish);
+      },
+
+      simulateAd(onComplete) {
+        const overlay = document.getElementById('ad-overlay');
+        const progress = document.getElementById('ad-progress');
+        const status = document.getElementById('ad-status');
+        overlay.classList.remove('hidden');
+        let pct = 0;
+        status.textContent = 'Assistindo anúncio patrocinado...';
+
+        const timer = setInterval(() => {
+          pct += 10;
+          progress.style.width = pct + '%';
+          if (pct >= 100) {
+            clearInterval(timer);
+            overlay.classList.add('hidden');
+            progress.style.width = '0%';
+            onComplete();
+          }
+        }, 200);
+      }
+    };
+
+    const BASE_MAX_HP = 450;
+
+    const CATALOG = {
+      characters: [
+        {
+          id: 'moreno_ouro',
+          name: 'Moreno do Ouro',
+          desc: '450 HP | Moreno, cabelo liso e cordão de ouro',
+          speed: 4.0,
+          skinColor: '#8d5524',
+          hairColor: '#111111',
+          goldChain: true,
+          price: 0
+        },
+        {
+          id: 'cria',
+          name: 'Cria da Quebrada',
+          desc: '450 HP | Ágil nas ruas (+10% vel.)',
+          speed: 4.4,
+          skinColor: '#6f4e37',
+          hairColor: '#09090b',
+          goldChain: true,
+          price: 350,
+          adUnlockable: true
+        },
+        {
+          id: 'king',
+          name: 'Big King',
+          desc: '550 HP | Tanque (+100 HP)',
+          speed: 3.6,
+          skinColor: '#5c3818',
+          hairColor: '#18181b',
+          goldChain: true,
+          price: 750
+        }
+      ],
+      outfits: [
+        { id: 'casual', name: 'Regata & Correntão', desc: 'Visual de rua', color: '#f97316', price: 0 },
+        { id: 'suit', name: 'Terno Executivo', desc: 'Estilo chefe', color: '#111827', price: 300 },
+        { id: 'neon', name: 'Jaqueta Vice Neon', desc: 'Brilho noturno', color: '#ec4899', price: 550, adUnlockable: true },
+        { id: 'gold', name: 'Traje Dourado VIP', desc: 'Ostentação máxima', color: '#eab308', price: 1100 }
+      ],
+      weapons: [
+        { id: 'pistol', name: 'Pistola 9mm', desc: 'Elimina na hora | Média', damage: 1, fireRate: 220, speed: 13, color: '#fde047', spread: 0, pellets: 1, price: 0 },
+        { id: 'uzi', name: 'Submetralhadora', desc: 'Elimina na hora | Rápida', damage: 1, fireRate: 105, speed: 15, color: '#38bdf8', spread: 0.1, pellets: 1, price: 450 },
+        { id: 'shotgun', name: 'Escopeta Doze', desc: 'Elimina na hora | Múltiplos tiros', damage: 1, fireRate: 550, speed: 12, color: '#fb923c', spread: 0.25, pellets: 5, price: 800, adUnlockable: true },
+        { id: 'rifle', name: 'Fuzil Tático', desc: 'Elimina na hora | Alta velocidade', damage: 1, fireRate: 155, speed: 18, color: '#f43f5e', spread: 0.03, pellets: 1, price: 1300 }
+      ]
+    };
+
+    const defaultSave = {
+      money: 1500,
+      bestLevel: 1,
+      unlockedCharacters: ['moreno_ouro'],
+      equippedCharacter: 'moreno_ouro',
+      unlockedOutfits: ['casual'],
+      equippedOutfit: 'casual',
+      unlockedWeapons: ['pistol'],
+      equippedWeapon: 'pistol'
+    };
+
+    function loadSaveSafe() {
+      try {
+        const raw = localStorage.getItem('vice_street_save_v13');
+        if (!raw) return { ...defaultSave };
+        const parsed = JSON.parse(raw);
+        return { ...defaultSave, ...parsed };
+      } catch (_) {
+        return { ...defaultSave };
+      }
+    }
+
+    let playerData = loadSaveSafe();
+    function saveGame() {
+      try {
+        localStorage.setItem('vice_street_save_v13', JSON.stringify(playerData));
+      } catch (_) {}
+      updateHUD();
+    }
+
+    let currentLevel = 1;
+    let remainingToSpawn = 0;
+    let levelAdvancing = false;
+    let bannerTimeout = null;
+    let lastTickMs = Date.now();
+
+    function getLevelEnemyTotal(lvl) {
+      return 6 + lvl * 2;
+    }
+
+    function showBanner(text) {
+      const banner = document.getElementById('level-banner');
+      if (!banner) return;
+      banner.textContent = text;
+      banner.classList.remove('hidden');
+      if (bannerTimeout) clearTimeout(bannerTimeout);
+      bannerTimeout = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 2600);
+    }
+
+    function startLevel(lvl) {
+      currentLevel = lvl;
+      remainingToSpawn = getLevelEnemyTotal(lvl);
+      enemies = [];
+      enemyBullets = [];
+      grenades = [];
+      explosions = [];
+      levelAdvancing = false;
+
+      const initialBatch = Math.min(4, remainingToSpawn);
+      for (let i = 0; i < initialBatch; i++) {
+        const angle = (Math.PI * 2 * i) / initialBatch + 0.4;
+        const ex = Math.max(80, Math.min(WORLD_SIZE - 80, player.x + Math.cos(angle) * 230));
+        const ey = Math.max(80, Math.min(WORLD_SIZE - 80, player.y + Math.sin(angle) * 230));
+        const forceTank = (lvl >= 3 && i === 0);
+        if (!collidesWithBuilding(ex, ey, forceTank ? 28 : 19)) {
+          addEnemyAt(ex, ey, forceTank);
+          remainingToSpawn--;
+        }
+      }
+
+      if (lvl === 3) {
+        showBanner('🛡️ Nível 3 — Tanques de guerra na área! Elimine todos!');
+      } else if (lvl > 3) {
+        showBanner(`🏁 Nível ${lvl} — Elimine todos os inimigos e tanques!`);
+      } else {
+        showBanner(`🏁 Nível ${lvl} — Elimine todos os ${getLevelEnemyTotal(lvl)} inimigos!`);
+      }
+      updateHUD();
+    }
+
+    function checkLevelClear() {
+      if (levelAdvancing || isAdPlaying) return;
+      if (remainingToSpawn <= 0 && enemies.length === 0) {
+        levelAdvancing = true;
+        isShooting = false;
+
+        const bonus = currentLevel * 400;
+        playerData.money += bonus;
+        if (currentLevel + 1 > (playerData.bestLevel || 1)) {
+          playerData.bestLevel = currentLevel + 1;
+        }
+        saveGame();
+
+        showBanner(`🏆 Nível ${currentLevel} limpo! +$${bonus}`);
+
+        AdsManager.showInterstitial(() => {
+          player.hp = Math.min(player.maxHp, player.hp + 130);
+          lastTickMs = Date.now();
+          startLevel(currentLevel + 1);
+        });
+      }
+    }
+
+    const WORLD_SIZE = 2800;
+    const BLOCK_SIZE = 400;
+    const ROAD_WIDTH = 160;
+    const SPAWN_X = 1600;
+    const SPAWN_Y = 1600;
+
+    const player = {
+      x: SPAWN_X,
+      y: SPAWN_Y,
+      radius: 19,
+      angle: 0,
+      hp: BASE_MAX_HP,
+      maxHp: BASE_MAX_HP,
+      lastShot: 0,
+      inVehicleId: null
+    };
+
+    const buildings = [];
+    for (let gx = 0; gx < WORLD_SIZE; gx += BLOCK_SIZE) {
+      for (let gy = 0; gy < WORLD_SIZE; gy += BLOCK_SIZE) {
+        const bx = gx + ROAD_WIDTH / 2 + 15;
+        const by = gy + ROAD_WIDTH / 2 + 15;
+        const bw = BLOCK_SIZE - ROAD_WIDTH - 30;
+        const bh = BLOCK_SIZE - ROAD_WIDTH - 30;
+        if (bw > 50 && bh > 50) {
+          buildings.push({
+            x: bx,
+            y: by,
+            w: bw,
+            h: bh,
+            color: ['#1e293b', '#334155', '#27272a', '#1f2937'][Math.floor(Math.random() * 4)]
+          });
+        }
+      }
+    }
+
+    const vehicles = [
+      { id: 'moto1', type: 'moto', name: 'Moto 160 Preta', x: SPAWN_X + 75, y: SPAWN_Y - 35, angle: 0, speed: 0, maxSpeed: 10.2, color: '#18181b', w: 34, h: 15 },
+      { id: 'moto2', type: 'moto', name: 'Moto Vermelha', x: SPAWN_X - 85, y: SPAWN_Y + 35, angle: Math.PI, speed: 0, maxSpeed: 10.6, color: '#dc2626', w: 34, h: 15 },
+      { id: 'car1', type: 'car', name: 'Esportivo Vermelho', x: SPAWN_X + 145, y: SPAWN_Y + 25, angle: 0, speed: 0, maxSpeed: 9.0, color: '#ef4444', w: 48, h: 25 },
+      { id: 'car2', type: 'car', name: 'Sedã Azul', x: SPAWN_X - 160, y: SPAWN_Y - 25, angle: Math.PI, speed: 0, maxSpeed: 8.2, color: '#3b82f6', w: 48, h: 25 },
+      { id: 'car3', type: 'car', name: 'Muscle Amarelo', x: SPAWN_X + 25, y: SPAWN_Y + 145, angle: Math.PI / 2, speed: 0, maxSpeed: 9.4, color: '#eab308', w: 50, h: 26 }
+    ];
+
+    let bullets = [], enemyBullets = [], grenades = [], explosions = [], enemies = [], coinDrops = [], wantedLevel = 0, killsCount = 0;
+
+    function rewardKill(x, y, wasTank) {
+      killsCount++;
+      if (killsCount % 4 === 0 && wantedLevel < 5) wantedLevel++;
+      const killBonus = (wasTank ? 120 : 40) + currentLevel * 12;
+      playerData.money += killBonus;
+      coinDrops.push({ x: x, y: y, value: (wasTank ? 180 : 95) + wantedLevel * 25 + currentLevel * 15 });
+      saveGame();
+    }
+
+    function collidesWithBuilding(x, y, r) {
+      return buildings.some(b => x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h);
+    }
+
+    function hasLineOfSight(x1, y1, x2, y2) {
+      const dist = Math.hypot(x2 - x1, y2 - y1);
+      const steps = Math.max(1, Math.ceil(dist / 24));
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const px = x1 + (x2 - x1) * t;
+        const py = y1 + (y2 - y1) * t;
+        if (collidesWithBuilding(px, py, 4)) return false;
+      }
+      return true;
+    }
+
+    function addEnemyAt(ex, ey, forceTank = false) {
+      const isTank = currentLevel >= 3 && (forceTank || Math.random() < Math.min(0.45, 0.25 + (currentLevel - 3) * 0.06));
+      const baseSpeed = isTank
+        ? 1.15 + Math.min(0.6, (currentLevel - 3) * 0.1)
+        : 1.65 + (currentLevel - 1) * 0.2 + Math.min(1.1, wantedLevel * 0.16);
+
+      enemies.push({
+        x: ex,
+        y: ey,
+        radius: isTank ? 28 : 19,
+        angle: Math.atan2(player.y - ey, player.x - ex),
+        turretAngle: Math.atan2(player.y - ey, player.x - ex),
+        hp: isTank ? 6 : 1,
+        maxHp: isTank ? 6 : 1,
+        isTank: isTank,
+        speed: baseSpeed,
+        isPolice: !isTank && (wantedLevel >= 2 || currentLevel >= 2) && Math.random() > 0.45,
+        canThrowGrenade: !isTank && Math.random() < Math.min(0.65, 0.35 + currentLevel * 0.08),
+        lastShot: Date.now() - Math.floor(Math.random() * 900),
+        lastGrenade: Date.now() - Math.floor(Math.random() * 2500)
+      });
+    }
+
+    function spawnEnemy() {
+      if (isAdPlaying || levelAdvancing || remainingToSpawn <= 0) return;
+      const maxSimultaneous = Math.min(14, 7 + currentLevel);
+      if (enemies.length >= maxSimultaneous) return;
+
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 240 + Math.random() * 240;
+      const ex = Math.max(70, Math.min(WORLD_SIZE - 70, player.x + Math.cos(angle) * dist));
+      const ey = Math.max(70, Math.min(WORLD_SIZE - 70, player.y + Math.sin(angle) * dist));
+      if (!collidesWithBuilding(ex, ey, 28)) {
+        addEnemyAt(ex, ey, false);
+        remainingToSpawn--;
+        updateHUD();
+      }
+    }
+    setInterval(spawnEnemy, 1300);
+
+    function shoot() {
+      if (isAdPlaying || levelAdvancing) return;
+      const now = Date.now();
+      const weapon = CATALOG.weapons.find(w => w.id === playerData.equippedWeapon) || CATALOG.weapons[0];
+      if (now - player.lastShot < weapon.fireRate) return;
+      player.lastShot = now;
+
+      for (let i = 0; i < weapon.pellets; i++) {
+        const spreadAngle = player.angle + (Math.random() - 0.5) * weapon.spread;
+        bullets.push({
+          x: player.x + Math.cos(player.angle) * 26,
+          y: player.y + Math.sin(player.angle) * 26,
+          vx: Math.cos(spreadAngle) * weapon.speed,
+          vy: Math.sin(spreadAngle) * weapon.speed,
+          damage: weapon.damage,
+          color: weapon.color,
+          life: 80
+        });
+      }
+    }
+
+    function enemyShoot(en, nowMs) {
+      if (en.isTank) {
+        const tankCooldown = Math.max(1150, 1750 - (currentLevel - 3) * 100);
+        if (nowMs - (en.lastShot || 0) < tankCooldown) return;
+        en.lastShot = nowMs;
+
+        const aimAngle = Math.atan2(player.y - en.y, player.x - en.x);
+        en.turretAngle = aimAngle;
+        const shellSpeed = 8.4 + Math.min(2.5, (currentLevel - 3) * 0.35);
+        const shellDamage = 34 + Math.min(20, (currentLevel - 3) * 5);
+
+        enemyBullets.push({
+          x: en.x + Math.cos(aimAngle) * 34,
+          y: en.y + Math.sin(aimAngle) * 34,
+          vx: Math.cos(aimAngle) * shellSpeed,
+          vy: Math.sin(aimAngle) * shellSpeed,
+          damage: shellDamage,
+          isShell: true,
+          radius: 8,
+          color: '#f97316',
+          life: 110
+        });
+        return;
+      }
+
+      const fireCooldown = Math.max(680, 1400 - (currentLevel - 1) * 100);
+      if (nowMs - (en.lastShot || 0) < fireCooldown) return;
+      en.lastShot = nowMs;
+
+      const aimAngle = Math.atan2(player.y - en.y, player.x - en.x) + (Math.random() - 0.5) * 0.14;
+      const bulletSpeed = 7.2 + Math.min(3.5, (currentLevel - 1) * 0.45);
+      const damage = 14 + Math.min(18, (currentLevel - 1) * 3);
+
+      enemyBullets.push({
+        x: en.x + Math.cos(aimAngle) * 24,
+        y: en.y + Math.sin(aimAngle) * 24,
+        vx: Math.cos(aimAngle) * bulletSpeed,
+        vy: Math.sin(aimAngle) * bulletSpeed,
+        damage: damage,
+        isShell: false,
+        radius: 5.5,
+        color: en.isPolice ? '#60a5fa' : '#fb7185',
+        life: 95
+      });
+    }
+
+    function enemyThrowGrenade(en, nowMs, dist) {
+      if (!en.canThrowGrenade || grenades.length >= 8) return;
+      const grenadeCooldown = Math.max(2400, 4600 - (currentLevel - 1) * 300);
+      if (nowMs - (en.lastGrenade || 0) < grenadeCooldown) return;
+      en.lastGrenade = nowMs;
+
+      const leadX = player.x + (moveVec.x || 0) * 36;
+      const leadY = player.y + (moveVec.y || 0) * 36;
+      const targetX = Math.max(50, Math.min(WORLD_SIZE - 50, leadX + (Math.random() - 0.5) * 45));
+      const targetY = Math.max(50, Math.min(WORLD_SIZE - 50, leadY + (Math.random() - 0.5) * 45));
+      const travelTime = Math.max(0.75, Math.min(1.35, dist / 340));
+
+      grenades.push({
+        x: en.x,
+        y: en.y,
+        startX: en.x,
+        startY: en.y,
+        targetX: targetX,
+        targetY: targetY,
+        elapsed: 0,
+        fuseTime: travelTime + 0.55,
+        travelTime: travelTime,
+        blastRadius: 88,
+        damage: 65 + Math.min(45, (currentLevel - 1) * 10)
+      });
+    }
+
+    function triggerGrenadeExplosion(g) {
+      explosions.push({
+        x: g.targetX,
+        y: g.targetY,
+        radius: g.blastRadius,
+        life: 16,
+        maxLife: 16
+      });
+
+      const distToPlayer = Math.hypot(player.x - g.targetX, player.y - g.targetY);
+      if (distToPlayer <= g.blastRadius) {
+        const dmg = player.inVehicleId ? Math.round(g.damage * 0.45) : g.damage;
+        player.hp -= dmg;
+        if (player.hp <= 0) {
+          handlePlayerDeath();
+        }
+      }
+    }
+
+    function getNearestVehicle(maxDist = 95) {
+      let best = null;
+      let bestDist = maxDist;
+      for (const v of vehicles) {
+        const d = Math.hypot(v.x - player.x, v.y - player.y);
+        if (d < bestDist) {
+          bestDist = d;
+          best = v;
+        }
+      }
+      return best;
+    }
+
+    function toggleVehicle() {
+      if (player.inVehicleId) {
+        const v = vehicles.find(item => item.id === player.inVehicleId);
+        if (v) {
+          v.speed = 0;
+          const exitX = v.x + Math.cos(v.angle + Math.PI / 2) * 32;
+          const exitY = v.y + Math.sin(v.angle + Math.PI / 2) * 32;
+          if (!collidesWithBuilding(exitX, exitY, player.radius)) {
+            player.x = exitX;
+            player.y = exitY;
+          } else {
+            player.x = v.x;
+            player.y = v.y;
+          }
+        }
+        player.inVehicleId = null;
+      } else {
+        const near = getNearestVehicle(100);
+        if (near) {
+          player.inVehicleId = near.id;
+          player.x = near.x;
+          player.y = near.y;
+          player.angle = near.angle;
+        }
+      }
+      updateVehicleButton();
+    }
+
+    function updateVehicleButton() {
+      const btn = document.getElementById('btn-vehicle');
+      if (player.inVehicleId) {
+        const v = vehicles.find(item => item.id === player.inVehicleId);
+        btn.textContent = v && v.type === 'moto' ? '🏍️ Sair' : '🚗 Sair';
+        btn.classList.add('active-vehicle');
+      } else {
+        const near = getNearestVehicle(100);
+        btn.textContent = near ? (near.type === 'moto' ? '🏍️ Subir' : '🚗 Entrar') : '🚗 Veículo';
+        btn.classList.remove('active-vehicle');
+      }
+    }
+
+    let moveVec = { x: 0, y: 0 }, isShooting = false, joyTouchId = null;
+    const joyZone = document.getElementById('joystick-zone');
+    const joyStick = document.getElementById('joystick-stick');
+
+    joyZone.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const t = e.changedTouches[0];
+      joyTouchId = t.identifier;
+      updateJoystick(t);
+    }, { passive: false });
+
+    joyZone.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (let t of e.changedTouches) if (t.identifier === joyTouchId) updateJoystick(t);
+    }, { passive: false });
+
+    joyZone.addEventListener('touchend', (e) => {
+      for (let t of e.changedTouches) {
+        if (t.identifier === joyTouchId) {
+          joyTouchId = null;
+          moveVec = { x: 0, y: 0 };
+          joyStick.style.transform = 'translate(0px, 0px)';
+        }
+      }
+    });
+
+    function updateJoystick(touch) {
+      const rect = joyZone.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let dx = touch.clientX - centerX;
+      let dy = touch.clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+      const maxDist = 40;
+      if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
+      joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+      moveVec.x = dx / maxDist;
+      moveVec.y = dy / maxDist;
+      if (!player.inVehicleId && dist > 4) {
+        player.angle = Math.atan2(dy, dx);
+      }
+    }
+
+    const btnShoot = document.getElementById('btn-shoot');
+    btnShoot.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isShooting = true;
+      shoot();
+    }, { passive: false });
+    btnShoot.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      isShooting = false;
+    });
+    btnShoot.addEventListener('touchcancel', () => { isShooting = false; });
+    btnShoot.addEventListener('mousedown', () => {
+      isShooting = true;
+      shoot();
+    });
+    btnShoot.addEventListener('mouseup', () => { isShooting = false; });
+    btnShoot.addEventListener('click', () => { shoot(); });
+
+    document.getElementById('btn-vehicle').addEventListener('click', toggleVehicle);
+
+    document.getElementById('btn-switch-weapon').addEventListener('click', () => {
+      const list = playerData.unlockedWeapons;
+      const idx = list.indexOf(playerData.equippedWeapon);
+      playerData.equippedWeapon = list[(idx + 1) % list.length];
+      saveGame();
+    });
+
+    let currentTab = 'characters';
+    const shopModal = document.getElementById('shop-modal');
+    const shopItemsEl = document.getElementById('shop-items');
+
+    document.getElementById('btn-open-shop').addEventListener('click', () => { shopModal.classList.remove('hidden'); renderShop(); });
+    document.getElementById('btn-close-shop').addEventListener('click', () => { shopModal.classList.add('hidden'); });
+
+    document.getElementById('btn-ad-coins').addEventListener('click', () => {
+      AdsManager.showRewarded(() => {
+        playerData.money += 600;
+        saveGame();
+      });
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        renderShop();
+      });
+    });
+
+    function renderShop() {
+      shopItemsEl.innerHTML = '';
+      const items = CATALOG[currentTab];
+
+      items.forEach(item => {
+        const unlockedKey = currentTab === 'characters' ? 'unlockedCharacters' : currentTab === 'outfits' ? 'unlockedOutfits' : 'unlockedWeapons';
+        const equippedKey = currentTab === 'characters' ? 'equippedCharacter' : currentTab === 'outfits' ? 'equippedOutfit' : 'equippedWeapon';
+        const isUnlocked = playerData[unlockedKey].includes(item.id);
+        const isEquipped = playerData[equippedKey] === item.id;
+
+        const card = document.createElement('div');
+        card.className = 'shop-card';
+        card.innerHTML = `
+          <div><h4>${item.name}</h4><p>${item.desc}</p></div>
+          <div>
+            <button class="buy-btn ${isEquipped ? 'equipped' : ''}">
+              ${isEquipped ? 'Equipado' : isUnlocked ? 'Equipar' : '💰 $' + item.price}
+            </button>
+            ${(!isUnlocked && item.adUnlockable) ? `<button class="buy-btn ad-unlock">🎬 Grátis (Vídeo)</button>` : ''}
+          </div>
+        `;
+
+        card.querySelector('.buy-btn').addEventListener('click', () => {
+          if (isUnlocked) {
+            playerData[equippedKey] = item.id;
+            saveGame(); renderShop();
+          } else if (playerData.money >= item.price) {
+            playerData.money -= item.price;
+            playerData[unlockedKey].push(item.id);
+            playerData[equippedKey] = item.id;
+            saveGame(); renderShop();
+          }
+        });
+
+        const adBtn = card.querySelector('.ad-unlock');
+        if (adBtn) {
+          adBtn.addEventListener('click', () => {
+            AdsManager.showRewarded(() => {
+              playerData[unlockedKey].push(item.id);
+              playerData[equippedKey] = item.id;
+              saveGame(); renderShop();
+            });
+          });
+        }
+
+        shopItemsEl.appendChild(card);
+      });
+    }
+
+    function updateHUD() {
+      document.getElementById('hp-text').textContent = Math.max(0, Math.ceil(player.hp));
+      document.getElementById('money-text').textContent = playerData.money;
+      document.getElementById('wanted-text').textContent = wantedLevel;
+      document.getElementById('level-text').textContent = currentLevel;
+      document.getElementById('left-text').textContent = Math.max(0, remainingToSpawn + enemies.length);
+    }
+
+    function handlePlayerDeath() {
+      player.hp = player.maxHp;
+      player.x = SPAWN_X;
+      player.y = SPAWN_Y;
+      player.inVehicleId = null;
+      wantedLevel = 0;
+      updateVehicleButton();
+      AdsManager.showInterstitial(() => {
+        lastTickMs = Date.now();
+        startLevel(currentLevel);
+      });
+    }
+
+    function update() {
+      const nowMs = Date.now();
+      const dt = Math.min(0.1, Math.max(0, (nowMs - lastTickMs) / 1000));
+      lastTickMs = nowMs;
+
+      if (isAdPlaying || levelAdvancing) {
+        updateHUD();
+        return;
+      }
+
+      const charData = CATALOG.characters.find(c => c.id === playerData.equippedCharacter) || CATALOG.characters[0];
+      const nextMaxHp = charData.id === 'king' ? BASE_MAX_HP + 100 : BASE_MAX_HP;
+      if (player.maxHp !== nextMaxHp) {
+        player.maxHp = nextMaxHp;
+        player.hp = Math.min(player.maxHp, Math.max(player.hp, player.maxHp));
+      }
+
+      const mag = Math.hypot(moveVec.x, moveVec.y);
+
+      if (player.inVehicleId) {
+        const v = vehicles.find(item => item.id === player.inVehicleId);
+        if (v) {
+          if (mag > 0.08) {
+            const targetAngle = Math.atan2(moveVec.y, moveVec.x);
+            let diff = targetAngle - v.angle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            const turnRate = v.type === 'moto' ? 0.12 : 0.085;
+            v.angle += diff * turnRate;
+            v.speed += (v.maxSpeed * mag - v.speed) * 0.1;
+          } else {
+            v.speed *= 0.93;
+          }
+
+          const nextVX = v.x + Math.cos(v.angle) * v.speed;
+          const nextVY = v.y + Math.sin(v.angle) * v.speed;
+
+          if (!collidesWithBuilding(nextVX, v.y, 14)) {
+            v.x = Math.max(30, Math.min(WORLD_SIZE - 30, nextVX));
+          } else {
+            v.speed *= -0.35;
+          }
+          if (!collidesWithBuilding(v.x, nextVY, 14)) {
+            v.y = Math.max(30, Math.min(WORLD_SIZE - 30, nextVY));
+          } else {
+            v.speed *= -0.35;
+          }
+
+          player.x = v.x;
+          player.y = v.y;
+          player.angle = v.angle;
+
+          if (Math.abs(v.speed) > 6 && wantedLevel > 0 && Math.random() < 0.01) {
+            wantedLevel--;
+          }
+        }
+      } else {
+        const nextX = player.x + moveVec.x * charData.speed;
+        const nextY = player.y + moveVec.y * charData.speed;
+
+        if (!collidesWithBuilding(nextX, player.y, player.radius)) {
+          player.x = Math.max(30, Math.min(WORLD_SIZE - 30, nextX));
+        }
+        if (!collidesWithBuilding(player.x, nextY, player.radius)) {
+          player.y = Math.max(30, Math.min(WORLD_SIZE - 30, nextY));
+        }
+      }
+
+      updateVehicleButton();
+
+      if (isShooting) shoot();
+
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx; b.y += b.vy; b.life--;
+        if (b.life <= 0 || collidesWithBuilding(b.x, b.y, 3)) bullets.splice(i, 1);
+      }
+
+      for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const eb = enemyBullets[i];
+        eb.x += eb.vx;
+        eb.y += eb.vy;
+        eb.life--;
+
+        if (eb.life <= 0 || collidesWithBuilding(eb.x, eb.y, eb.radius || 4)) {
+          if (eb.isShell) {
+            explosions.push({ x: eb.x, y: eb.y, radius: 52, life: 12, maxLife: 12 });
+          }
+          enemyBullets.splice(i, 1);
+          continue;
+        }
+
+        const hitRadius = (player.inVehicleId ? 24 : player.radius) + (eb.radius || 5);
+        if (Math.hypot(eb.x - player.x, eb.y - player.y) < hitRadius) {
+          const finalDmg = player.inVehicleId ? Math.round(eb.damage * 0.55) : eb.damage;
+          player.hp -= finalDmg;
+          if (eb.isShell) {
+            explosions.push({ x: eb.x, y: eb.y, radius: 58, life: 14, maxLife: 14 });
+          }
+          enemyBullets.splice(i, 1);
+          if (player.hp <= 0) {
+            handlePlayerDeath();
+            return;
+          }
+        }
+      }
+
+      for (let i = grenades.length - 1; i >= 0; i--) {
+        const g = grenades[i];
+        g.elapsed += dt;
+        const flightT = Math.min(1, g.elapsed / g.travelTime);
+        const arcLift = Math.sin(flightT * Math.PI) * 26;
+        g.x = g.startX + (g.targetX - g.startX) * flightT;
+        g.y = g.startY + (g.targetY - g.startY) * flightT - arcLift;
+
+        if (g.elapsed >= g.fuseTime) {
+          grenades.splice(i, 1);
+          triggerGrenadeExplosion(g);
+          if (isAdPlaying || levelAdvancing) return;
+        }
+      }
+
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        explosions[i].life--;
+        if (explosions[i].life <= 0) explosions.splice(i, 1);
+      }
+
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const en = enemies[i];
+        const dx = player.x - en.x;
+        const dy = player.y - en.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+          en.angle = Math.atan2(dy, dx);
+          en.turretAngle = en.angle;
+        }
+
+        if (player.inVehicleId) {
+          const v = vehicles.find(item => item.id === player.inVehicleId);
+          if (v && Math.abs(v.speed) > 1.8 && dist < en.radius + 24) {
+            en.hp -= en.isTank ? 2 : 999;
+            if (en.hp <= 0) {
+              enemies.splice(i, 1);
+              rewardKill(en.x, en.y, en.isTank);
+              continue;
+            }
+          }
+        }
+
+        const shootRange = en.isTank ? 520 : 440 + Math.min(140, (currentLevel - 1) * 25);
+        if (dist < shootRange && dist > 35 && hasLineOfSight(en.x, en.y, player.x, player.y)) {
+          enemyShoot(en, nowMs);
+          if (!en.isTank && dist < 480 && dist > 90) {
+            enemyThrowGrenade(en, nowMs, dist);
+          }
+        }
+
+        const preferredDist = en.isTank ? 190 : (dist < 340 ? 150 : 30);
+        if (dist > preferredDist) {
+          const stepX = en.x + (dx / dist) * en.speed;
+          const stepY = en.y + (dy / dist) * en.speed;
+          if (!collidesWithBuilding(stepX, en.y, en.radius)) en.x = stepX;
+          if (!collidesWithBuilding(en.x, stepY, en.radius)) en.y = stepY;
+        } else if (dist <= 32 && !player.inVehicleId) {
+          player.hp -= (en.isTank ? 0.5 : 0.25) + (currentLevel - 1) * 0.04;
+          if (player.hp <= 0) {
+            handlePlayerDeath();
+            return;
+          }
+        }
+
+        let killedEnemy = false;
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          if (Math.hypot(b.x - en.x, b.y - en.y) < en.radius + 10) {
+            bullets.splice(j, 1);
+            en.hp -= b.damage || 1;
+            if (en.hp <= 0) {
+              enemies.splice(i, 1);
+              rewardKill(en.x, en.y, en.isTank);
+              killedEnemy = true;
+            }
+            break;
+          }
+        }
+        if (killedEnemy) continue;
+      }
+
+      for (let i = coinDrops.length - 1; i >= 0; i--) {
+        const c = coinDrops[i];
+        if (Math.hypot(player.x - c.x, player.y - c.y) < player.radius + 24) {
+          playerData.money += c.value;
+          coinDrops.splice(i, 1);
+          saveGame();
+        }
+      }
+
+      checkLevelClear();
+      updateHUD();
+    }
+
+    function drawVehicles() {
+      vehicles.forEach(v => {
+        ctx.save();
+        ctx.translate(v.x, v.y);
+        ctx.rotate(v.angle);
+
+        if (v.type === 'moto') {
+          ctx.fillStyle = '#09090b';
+          ctx.fillRect(-16, -5, 8, 10);
+          ctx.fillRect(8, -5, 8, 10);
+          ctx.fillStyle = v.color;
+          ctx.fillRect(-12, -6, 24, 12);
+          ctx.strokeStyle = '#f4f4f5';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(7, -9);
+          ctx.lineTo(7, 9);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = v.color;
+          ctx.fillRect(-v.w / 2, -v.h / 2, v.w, v.h);
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-6, -v.h / 2 + 3, 18, v.h - 6);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.6;
+          ctx.strokeRect(-v.w / 2, -v.h / 2, v.w, v.h);
+        }
+
+        if (player.inVehicleId === v.id) {
+          const charData = CATALOG.characters.find(c => c.id === playerData.equippedCharacter) || CATALOG.characters[0];
+          ctx.fillStyle = charData.skinColor;
+          ctx.beginPath();
+          ctx.arc(-1, 0, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = charData.hairColor || '#111111';
+          ctx.beginPath();
+          ctx.arc(-2.5, 0, 8.2, Math.PI * 0.55, Math.PI * 1.45);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function drawEnemies() {
+      enemies.forEach(en => {
+        ctx.save();
+        ctx.translate(en.x, en.y);
+
+        if (en.isTank) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+          ctx.beginPath();
+          ctx.arc(0, 5, 31, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.save();
+          ctx.rotate(en.angle || 0);
+          ctx.fillStyle = '#14532d';
+          ctx.fillRect(-26, -22, 52, 44);
+          ctx.fillStyle = '#09090b';
+          ctx.fillRect(-28, -26, 56, 7);
+          ctx.fillRect(-28, 19, 56, 7);
+          ctx.fillStyle = '#166534';
+          ctx.fillRect(-20, -16, 40, 32);
+          ctx.restore();
+
+          ctx.save();
+          ctx.rotate(en.turretAngle || en.angle || 0);
+          ctx.fillStyle = '#09090b';
+          ctx.fillRect(6, -4.5, 28, 9);
+          ctx.fillStyle = '#15803d';
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+
+          const hpRatio = Math.max(0, en.hp / (en.maxHp || 6));
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(-24, -36, 48, 6);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-24, -36, 48 * hpRatio, 6);
+
+          ctx.restore();
+          return;
+        }
+
+        ctx.rotate(en.angle || 0);
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.arc(0, 4, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = en.isPolice ? '#2563eb' : '#ef4444';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 14, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#e0a974';
+        ctx.beginPath();
+        ctx.arc(2, 0, 11, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#18181b';
+        ctx.beginPath();
+        ctx.arc(-1, 0, 11.2, Math.PI * 0.55, Math.PI * 1.45);
+        ctx.fill();
+
+        ctx.fillStyle = '#09090b';
+        ctx.fillRect(11, 4, 17, 5);
+
+        ctx.restore();
+      });
+    }
+
+    function drawPlayer() {
+      if (player.inVehicleId) return;
+
+      const charData = CATALOG.characters.find(c => c.id === playerData.equippedCharacter) || CATALOG.characters[0];
+      const outfitData = CATALOG.outfits.find(o => o.id === playerData.equippedOutfit) || CATALOG.outfits[0];
+
+      ctx.save();
+      ctx.translate(player.x, player.y);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.beginPath();
+      ctx.arc(0, 4, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 24, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.rotate(player.angle);
+
+      ctx.fillStyle = outfitData.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 15, 21, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (charData.goldChain) {
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(5, 0, 12, -1.15, 1.15);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = charData.skinColor;
+      ctx.beginPath();
+      ctx.arc(2, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = charData.hairColor || '#111111';
+      ctx.beginPath();
+      ctx.arc(-1.5, 0, 12.5, Math.PI * 0.52, Math.PI * 1.48);
+      ctx.fill();
+
+      ctx.fillStyle = charData.skinColor;
+      ctx.fillRect(6, 6, 12, 6);
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(13, 5, 22, 6);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(15, 5, 6, 6);
+
+      ctx.restore();
+    }
+
+    function drawGrenadesAndExplosions() {
+      grenades.forEach(g => {
+        const urgency = Math.min(1, g.elapsed / g.fuseTime);
+        ctx.save();
+        ctx.strokeStyle = `rgba(239, 68, 68, ${0.25 + urgency * 0.55})`;
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.08 + urgency * 0.14})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.arc(g.targetX, g.targetY, g.blastRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#14532d';
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      explosions.forEach(ex => {
+        const alpha = Math.max(0, ex.life / ex.maxLife);
+        const r = ex.radius * (1.15 - alpha * 0.35);
+        ctx.save();
+        ctx.fillStyle = `rgba(251, 146, 60, ${alpha * 0.65})`;
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(254, 240, 138, ${alpha * 0.85})`;
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, r * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const camX = player.x - canvas.width / 2;
+      const camY = player.y - canvas.height / 2;
+
+      ctx.save();
+      ctx.translate(-camX, -camY);
+
+      ctx.fillStyle = '#242424';
+      ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([18, 18]);
+      for (let g = 0; g <= WORLD_SIZE; g += BLOCK_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(g, 0);
+        ctx.lineTo(g, WORLD_SIZE);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, g);
+        ctx.lineTo(WORLD_SIZE, g);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      coinDrops.forEach(c => {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath(); ctx.arc(c.x, c.y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#713f12'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('$', c.x - 3.5, c.y + 4);
+      });
+
+      buildings.forEach(b => {
+        ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeStyle = '#475569'; ctx.strokeRect(b.x, b.y, b.w, b.h);
+      });
+
+      drawGrenadesAndExplosions();
+      drawVehicles();
+      drawEnemies();
+      drawPlayer();
+
+      bullets.forEach(b => {
+        ctx.fillStyle = b.color;
+        ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+      });
+
+      enemyBullets.forEach(eb => {
+        ctx.fillStyle = eb.color;
+        ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.radius || 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+
+    function gameLoop() {
+      try {
+        update();
+      } catch (err) {
+        console.error(err);
+      }
+      try {
+        draw();
+      } catch (err) {
+        console.error(err);
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    startLevel(1);
+    gameLoop();
+  </script>
+</body>
+</html>
