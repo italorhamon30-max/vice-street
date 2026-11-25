@@ -13,11 +13,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -36,8 +36,10 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          export ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}
-          export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          SDK_DIR="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
+          echo "sdk.dir=$SDK_DIR" > android/local.properties
           cd android
           ./gradlew assembleDebug
 
