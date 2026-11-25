@@ -19,11 +19,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies and sync Capacitor
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npx cap sync android
+
       - name: Grant execute permission for gradlew
-        run: chmod +x android/gradlew
+        run: |
+          test -f android/gradlew
+          chmod +x android/gradlew
 
       - name: Build Debug APK
-        run: cd android && ./gradlew assembleDebug
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
