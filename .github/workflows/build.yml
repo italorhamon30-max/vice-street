@@ -34,13 +34,17 @@ jobs:
           chmod +x gradlew
           ./gradlew clean assembleDebug
 
-      - name: Verify APK exists
+      - name: Sign APK with apksigner
         run: |
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          KEYSTORE=/tmp/vice-debug.keystore
+          keytool -genkeypair -v -keystore "$KEYSTORE" -alias vicekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=ViceStreet, OU=Dev, O=Game, L=City, S=State, C=BR"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name "apksigner" | sort -V | tail -n 1)
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-pass pass:android --key-pass pass:android --out android/app/build/outputs/apk/debug/vice-street-signed.apk android/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose android/app/build/outputs/apk/debug/vice-street-signed.apk
 
-      - name: Upload APK Artifact
+      - name: Upload Signed APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vice-street-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: vice-street-signed-apk
+          path: android/app/build/outputs/apk/debug/vice-street-signed.apk
           if-no-files-found: error
